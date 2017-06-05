@@ -1,6 +1,5 @@
 from celery.task import task
 from os import environ, pathsep
-from os.path import exists, abspath, join
 from subprocess import check_output, CalledProcessError
 from shutil import rmtree
 from tempfile import mkdtemp
