@@ -1,6 +1,7 @@
 from celery.task import task
 from os import environ, pathsep
-from subprocess import check_call, check_output, CalledProcessError
+from os.path import exists, abspath, join
+from subprocess import check_output, CalledProcessError
 from shutil import rmtree
 from tempfile import mkdtemp
 import logging
@@ -11,9 +12,11 @@ logging.basicConfig(level=logging.INFO)
 
 environ["PATH"] = PATH + pathsep + environ["PATH"]
 
+READY_PATH = "{0}/5_Ready_for_script"
+PREP_PATH = "{0}/6_Prep_to_bag"
 
-@task()
-def _digilabnas_wrapper(source="", destination="", destructive=False):
+
+def _digilabnas_wrapper(move_projects=False):
     """
     Internal wrapper to call the digilabnas script
     
@@ -26,27 +29,42 @@ def _digilabnas_wrapper(source="", destination="", destructive=False):
         logging.error(environ)
         raise Exception("Digilabnas script path missing. Contact your administrator")
 
-    if source == "":
-        source = WORKSPACE_PATH
+    if not WORKSPACE_PATH:
+        logging.error("Missing WORKSPACE_PATH")
+        logging.error(environ)
+        raise Exception("Workspace not configured. Contact your administrator")
+
+    source = READY_PATH.format(WORKSPACE_PATH)
     logging.info("Source path: {0}".format(source))
     
-    if destination == "":
-        destination = mkdtemp(prefix="digilabnas_")
+    tmpdir = mkdtemp(prefix="digilabnas_")
+    logging.info("Temporay path: {0}".format(tmpdir))
+    
+    destination = PREP_PATH.format(WORKSPACE_PATH)
     logging.info("Destination path: {0}".format(destination))
     
-    destroy = " --destroy" if destructive else ""
+    destroy = " --destroy" if move_projects else ""
 
     try:
         cmd_response = None
         cmd_response = check_output(
-            "{0} --src {1} --dest {2}{3}".format(DIGILABNAS_SCRIPT_PATH, source, destination, destroy),
+            "{0} --src {1} --dest {2}{3}".format(DIGILABNAS_SCRIPT_PATH, source, tmpdir, destroy),
             shell=True
         )
         logging.debug(cmd_response)
+        if move_projects:
+            mv_response = check_output(
+                ["mv", "-v", "--no-clobber", "{0}/*".format(tmpdir), destination]
+            )
     except CalledProcessError as err:
         logging.error(cmd_response)
         logging.error(err)
         logging.error(environ)
+    finally:
+        rmtree(tmpdir)
+
+    if move_projects:
+        return [cmd_response, mv_response]
     return cmd_response
 
 
@@ -58,7 +76,7 @@ def apply_changes():
     This task calls the digilabnas script with --destroy option set.
 
     """
-    return _digilabnas_wrapper(destructive=True)
+    return _digilabnas_wrapper(move_projects=True)
 
 
 @task
@@ -66,7 +84,7 @@ def preview_changes():
     """
     Preview normalization of project filenames and paths in preparation for bagging.
     
-    This task calls the digilabnas script in non-destructive mode.
+    This task calls the digilabnas script in non-move_projects mode.
     
     """
     return _digilabnas_wrapper()
