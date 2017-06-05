@@ -45,13 +45,13 @@ def _digilabnas_wrapper(source="", destination="", destructive=False):
         logging.debug(cmd_response)
     except CalledProcessError as err:
         logging.error(cmd_response)
-        logging.error(error)
+        logging.error(err)
         logging.error(environ)
     return cmd_response
 
 
 @task
-def apply_changes()
+def apply_changes():
     """
     Normalizes project filenames and paths in preparation for bagging.
 
