@@ -37,17 +37,17 @@ def _digilabnas_wrapper(source="", destination="", destructive=False):
     destroy = " --destroy" if destructive else ""
 
     try:
-        drush_response = None
-        drush_response = check_output(
+        cmd_response = None
+        cmd_response = check_output(
             "{0} --src {1} --dest {2}{3}".format(DIGILABNAS_SCRIPT_PATH, source, destination, destroy),
             shell=True
         )
-        logging.debug(drush_response)
+        logging.debug(cmd_response)
     except CalledProcessError as err:
-        logging.error(drush_response)
+        logging.error(cmd_response)
         logging.error(error)
         logging.error(environ)
-    return drush_response
+    return cmd_response
 
 
 @task
