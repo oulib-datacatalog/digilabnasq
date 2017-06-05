@@ -51,7 +51,7 @@ def _digilabnas_wrapper(source="", destination="", destructive=False):
 
 
 @task
-def rename_pre_bagging()
+def apply_changes()
     """
     Normalizes project filenames and paths in preparation for bagging.
 
@@ -62,7 +62,7 @@ def rename_pre_bagging()
 
 
 @task
-def preview_results():
+def preview_changes():
     """
     Preview normalization of project filenames and paths in preparation for bagging.
     
